@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Calculadora de Finiquito</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="alert alert-primary">
+            <h4>Calculadora de Finiquito</h4>
+            
+            <div>Ingresa tu Nombre:</div>
+            <input type="text" id="nombre" class="form-control mb-3" placeholder="Tu nombre">
+            
+            <div>Ingresa tu Fecha de Ingreso:</div>
+            <input type="date" id="fechaIngreso" class="form-control mb-3">
+
+            <div>Ingresa tu Fecha de Baja:</div>
+            <input type="date" id="fechaBaja" class="form-control mb-3">
+
+            <div>Ingresa tu Salario:</div>
+            <input type="number" id="salario" class="form-control mb-3" placeholder="Salario">
+
+            <div>Selecciona la Frecuencia de Pago:</div>
+            <select id="frecuenciaPago" class="form-select mb-3">
+                <option value="">---Selecciona---</option>
+                <option value="diario">Diario</option>
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="mensual">Mensual</option>
+            </select>
+
+            <div>Ingresa el Factor de Días de Vacaciones Correspondientes (acumuladas):</div>
+            <input type="number" id="diasVacacionesCorrespond" class="form-control mb-3" placeholder="Días de vacaciones acumuladas que te corresponden">
+
+            <div>Ingresa el Número de Días de Vacaciones no Tomadas (de años anteriores):</div>
+            <input type="number" id="diasVacacionesNoTomadas" class="form-control mb-3" placeholder="Días de vacaciones no tomadas de años anteriores">
+
+            <div>Ingresa los Días Trabajados después de tu último pago:</div>
+            <input type="number" id="diasTrabajados" class="form-control mb-3" placeholder="Días trabajados">
+
+            <button class="btn btn-primary" onclick="calcularFiniquito()">Calcular Finiquito</button>
+
+            <div class="mt-3">
+                <p id="resultado"></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 text-center">
+        <p>Creado por C.P. Salvador Gonzalez Ferrer</p>
+    </footer>
+
+    <script>
+        function calcularFiniquito() {
+            // Obtener los valores ingresados
+            var nombre = document.getElementById("nombre").value;
+            var fechaIngreso = document.getElementById("fechaIngreso").value;
+            var fechaBaja = document.getElementById("fechaBaja").value;
+            var salario = parseFloat(document.getElementById("salario").value);
+            var frecuenciaPago = document.getElementById("frecuenciaPago").value;
+            var diasTrabajados = parseFloat(document.getElementById("diasTrabajados").value);
+            var diasVacacionesCorrespond = parseFloat(document.getElementById("diasVacacionesCorrespond").value);
+            var diasVacacionesNoTomadas = parseInt(document.getElementById("diasVacacionesNoTomadas").value);
+
+            // Validar los campos
+            if (nombre === "" || fechaIngreso === "" || fechaBaja === "" || isNaN(salario) || isNaN(diasTrabajados) || isNaN(diasVacacionesNoTomadas) || isNaN(diasVacacionesCorrespond) || frecuenciaPago === "") {
+                document.getElementById("resultado").innerHTML = "<strong>Por favor, completa todos los campos.</strong>";
+                return;
+            }
+
+            // Convertir las fechas a objetos Date
+            var fechaIngresoDate = new Date(fechaIngreso);
+            var fechaBajaDate = new Date(fechaBaja);
+
+            // Calcular el salario diario basado en la frecuencia de pago
+            var salarioRecibido;
+            switch (frecuenciaPago) {
+                case 'diario':
+                    salarioRecibido = salario;
+                    break;
+                case 'semanal':
+                    salarioRecibido = salario / 7;
+                    break;
+                case 'quincenal':
+                    salarioRecibido = salario / 15;
+                    break;
+                case 'mensual':
+                    salarioRecibido = salario / 30; // Aproximado, asumiendo 30 días en un mes
+                    break;
+                default:
+                    salarioRecibido = 0; // En caso de un valor inesperado
+            }
+
+            // Sueldo pendiente: salario diario * días trabajados
+            var sueldoPendiente = salarioRecibido * diasTrabajados;
+
+            // Determinar si el trabajador lleva más de un año
+            var añoActual = new Date().getFullYear();
+            var fecha21Diciembre = new Date(añoActual - 1, 11, 21); // 21 de diciembre del año anterior
+            var diasTrabajadosAnio;
+
+            if (fechaIngresoDate <= fecha21Diciembre) {
+                // Lleva más de un año en la empresa, calcular desde el 21 de diciembre del año anterior
+                diasTrabajadosAnio = (fechaBajaDate - fecha21Diciembre) / (1000 * 60 * 60 * 24); // Sin redondear, en milisegundos
+            } else {
+                // Menos de un año, calcular desde la fecha de ingreso
+                diasTrabajadosAnio = (fechaBajaDate - fechaIngresoDate) / (1000 * 60 * 60 * 24); // Sin redondear, en milisegundos
+            }
+
+            // Aguinaldo proporcional: (salario diario * 15 / 365) * días trabajados en el año
+            var aguinaldoProporcional = ((salarioRecibido * 15) / 365) * diasTrabajadosAnio;
+
+            // Calcular vacaciones correspondientes y prima vacacional
+            var vacacionesPendientes = diasVacacionesCorrespond * salarioRecibido; // Vacaciones no tomadas en dinero
+            var primaVacacional = vacacionesPendientes * 0.25; // Prima vacacional del 25%
+
+            // Calcular vacaciones no tomadas y su prima vacacional
+            var vacacionesNoTomadasPendient = diasVacacionesNoTomadas * salarioRecibido;
+            var primaVacacionalPendient = vacacionesNoTomadasPendient * 0.25;
+
+            // Calcular los años trabajados
+            var añosTrabajados = fechaBajaDate.getFullYear() - fechaIngresoDate.getFullYear();
+
+            // Prima de antigüedad si tiene más de 15 años
+            var primaAntiguedad = 0;
+            if (añosTrabajados > 15) {
+                primaAntiguedad = salarioRecibido * 12 * (añosTrabajados - 15); // Un mes por cada año adicional
+            }
+
+            // Sumar todas las vacaciones y primas
+            var TotalVacaciones = vacacionesPendientes + vacacionesNoTomadasPendient;
+            var TotalPrimaVacacional = primaVacacional + primaVacacionalPendient;
+
+            // Sumar todo el finiquito
+            var finiquitoTotal = sueldoPendiente + aguinaldoProporcional + TotalVacaciones + TotalPrimaVacacional + primaAntiguedad;
+
+            // Mostrar el resultado con todos los decimales
+            document.getElementById("resultado").innerHTML = `
+                <strong>${nombre}</strong>, tu finiquito es: <br>
+                Sueldo pendiente: ${sueldoPendiente.toFixed(2)} <br>
+                Aguinaldo proporcional: ${aguinaldoProporcional.toFixed(2)} <br>
+                Pago total Vacaciones: ${TotalVacaciones.toFixed(2)} <br>
+                Prima vacacional: ${TotalPrimaVacacional.toFixed(2)} <br>
+                Prima de antigüedad: ${primaAntiguedad.toFixed(2)} <br>
+                <strong>Total finiquito: ${finiquitoTotal.toFixed(2)}</strong>
+            `;
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
